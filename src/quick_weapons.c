@@ -20,8 +20,8 @@
 #define QW_EXPORT __attribute__((visibility("default")))
 #endif
 
-extern const unsigned char *g_sdlKeyboardState;
-extern int g_PsyX_WheelTotal;   /* + = wheel up; - = wheel down */
+/* Use SDL's public input API instead of PsyCross private C++ symbols.
+ * Private C++ globals are not necessarily exported under their C names. */
 extern int Pc_ConsoleIsOpen(void);
 extern void GameFs_WeaponInfoUpdate(void);
 
@@ -62,8 +62,21 @@ static const u8 kWeaponOrder[] = {
 #define QW_NWEAPONS ((int)(sizeof(kWeaponOrder) / sizeof(kWeaponOrder[0])))
 
 static unsigned char s_prevKeys[QW_NBINDS];
+static SDL_atomic_t s_wheelAccumulator = {0};
 static int s_prevWheelTotal;
-static int s_haveWheelSample;
+
+/* SDL invokes event watchers when input events enter its queue.
+ * Accumulate wheel movement even when the port grabs/hides its cursor. */
+static int SDLCALL Qw_WheelEvent(void *userdata, SDL_Event *event)
+{
+    int delta;
+    (void)userdata;
+    if (event->type != SDL_MOUSEWHEEL) return 1;
+    delta = event->wheel.y;
+    if (event->wheel.direction == SDL_MOUSEWHEEL_FLIPPED) delta = -delta;
+    if (delta != 0) SDL_AtomicAdd(&s_wheelAccumulator, delta);
+    return 1;
+}
 
 static s32 Qw_FindOwnedSlot(u8 id)
 {
@@ -157,9 +170,14 @@ QW_EXPORT void SH_Plugin_Init(void)
 {
     int i;
     for (i = 0; i < QW_NBINDS; ++i) s_prevKeys[i] = 0;
-    s_haveWheelSample = 0;
+    SDL_AtomicSet(&s_wheelAccumulator, 0);
+    s_prevWheelTotal = 0;
+    SDL_AddEventWatch(Qw_WheelEvent, NULL);
 }
-QW_EXPORT void SH_Plugin_Shutdown(void) { }
+QW_EXPORT void SH_Plugin_Shutdown(void)
+{
+    SDL_DelEventWatch(Qw_WheelEvent, NULL);
+}
 
 /* The plugin loader invokes this once per game update. No keyboard commands
  * are queued while in inventory, title, cutscenes or unsafe animations. */
@@ -168,7 +186,7 @@ QW_EXPORT void SH_Plugin_OnUpdate(void)
     int i;
     int wheelDelta = 0;
     int target = -1;
-    const unsigned char *keyboard = g_sdlKeyboardState;
+    const unsigned char *keyboard = SDL_GetKeyboardState(NULL);
 
     /* Consume input transitions even while blocked: never execute them later. */
     for (i = 0; i < QW_NBINDS; ++i) {
@@ -177,12 +195,10 @@ QW_EXPORT void SH_Plugin_OnUpdate(void)
         s_prevKeys[i] = down ? 1 : 0;
     }
 
-    if (!s_haveWheelSample) {
-        s_prevWheelTotal = g_PsyX_WheelTotal;
-        s_haveWheelSample = 1;
-    } else {
-        wheelDelta = g_PsyX_WheelTotal - s_prevWheelTotal;
-        s_prevWheelTotal = g_PsyX_WheelTotal;
+    {
+        int newWheelTotal = SDL_AtomicGet(&s_wheelAccumulator);
+        wheelDelta = newWheelTotal - s_prevWheelTotal;
+        s_prevWheelTotal = newWheelTotal;
     }
 
     if (!Qw_SafeToEquip()) return;
