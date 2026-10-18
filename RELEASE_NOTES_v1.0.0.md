@@ -22,7 +22,7 @@ An unofficial gameplay plugin for **Silent Hill 1 Native PC Port** that lets you
 1. Download **`Silent-Hill-Quick-Weapons-v1.0.0.zip`** from this release's Assets.
 2. Close the game and back up the game folder.
 3. Copy `plugins/quick_weapons.dll` into the `plugins` directory alongside `SilentHillPC.exe`.
-4. Edit `config.cfg` and set `enable_plugins = 1` (without duplicating an existing entry).
+4. Open `config.cfg` next to `SilentHillPC.exe` in Notepad. Scroll to the **end of the file**, paste `enable_plugins = 1` on a **new line**, and save. This entry may be missing from the default configuration. If it already exists, change the existing value to `1` instead of adding a duplicate.
 5. Launch the game and enjoy.
 
 The Native PC Port Mod Manager also supports `plugins/*.dll` packages, although this specific ZIP was validated manually rather than through Mod Manager.
