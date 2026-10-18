@@ -45,7 +45,7 @@ Download the ZIP asset from the repository's **Releases** page once the release 
 
 1. Close the game. Back up the game folder, including your saves and configuration.
 2. Extract `plugins/quick_weapons.dll` from the release ZIP to a `plugins` folder next to `SilentHillPC.exe`. Create that folder if needed.
-3. Open `config.cfg` (next to the executable), find `enable_plugins`, and set it to `1`. If absent, add `enable_plugins = 1` on a new line.
+3. Open `config.cfg` (in the same folder as `SilentHillPC.exe`) with Notepad. **Scroll to the end of the file and paste `enable_plugins = 1` on its own new line**, then save. This setting may not exist in the default configuration. If a line beginning with `enable_plugins` already exists, change its value to `1` instead of adding a duplicate.
 4. Start Silent Hill and test in a save with multiple owned weapons.
 
 The PC Port Mod Manager also supports ZIP mods with `plugins/*.dll`: importing the release ZIP and choosing **Apply** is an alternative. **The exact ZIP has not been manually validated through Mod Manager yet**, so the manual install above is the verified path.
