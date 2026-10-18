@@ -48,7 +48,6 @@ Download the ZIP asset from the repository's **Releases** page once the release 
 3. Open `config.cfg` (in the same folder as `SilentHillPC.exe`) with Notepad. **Scroll to the end of the file and paste `enable_plugins = 1` on its own new line**, then save. This setting may not exist in the default configuration. If a line beginning with `enable_plugins` already exists, change its value to `1` instead of adding a duplicate.
 4. Start Silent Hill and test in a save with multiple owned weapons.
 
-The PC Port Mod Manager also supports ZIP mods with `plugins/*.dll`: importing the release ZIP and choosing **Apply** is an alternative. **The exact ZIP has not been manually validated through Mod Manager yet**, so the manual install above is the verified path.
 
 ### Uninstall
 
