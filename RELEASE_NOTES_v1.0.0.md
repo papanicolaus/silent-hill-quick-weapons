@@ -25,7 +25,6 @@ An unofficial gameplay plugin for **Silent Hill 1 Native PC Port** that lets you
 4. Open `config.cfg` next to `SilentHillPC.exe` in Notepad. Scroll to the **end of the file**, paste `enable_plugins = 1` on a **new line**, and save. This entry may be missing from the default configuration. If it already exists, change the existing value to `1` instead of adding a duplicate.
 5. Launch the game and enjoy.
 
-The Native PC Port Mod Manager also supports `plugins/*.dll` packages, although this specific ZIP was validated manually rather than through Mod Manager.
 
 ### Credits and license
 
