@@ -2,6 +2,10 @@ name: Build Quick Weapons (Windows)
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build.yml'
+      - 'src/**'
 
 permissions:
   contents: read
@@ -10,13 +14,13 @@ jobs:
   compile:
     name: Compile Windows DLL
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
 
     steps:
       - name: Get Quick Weapons source
         uses: actions/checkout@v4
 
-      - name: Get matching Silent Hill PC Port source
+      - name: Get matching Silent Hill PC Port headers
         uses: actions/checkout@v4
         with:
           repository: SlickAmogus/silent-hill-decomp
@@ -31,25 +35,57 @@ jobs:
           update: true
           install: >-
             mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-binutils
             mingw-w64-x86_64-SDL2
-            mingw-w64-x86_64-openal
-            mingw-w64-x86_64-libjpeg-turbo
 
-      - name: Compile DLL using matching engine headers
+      - name: Compile ONLY Quick Weapons plugin
         shell: msys2 {0}
         run: |
           set -e
-          PLUGIN_DIR="$(cygpath -m "$PWD")"
-          printf '\nadd_subdirectory("%s" "${CMAKE_BINARY_DIR}/quick_weapons_mod")\n' "$PLUGIN_DIR" >> engine/pc_port/CMakeLists.txt
-          cmake -S engine/pc_port -B engine/pc_port/build -G Ninja -DSH_BUILD_MAP_DLLS=ON -DSH_ENABLE_RETROACHIEVEMENTS=OFF -DSH_FMV_FFMPEG=OFF
-          cmake --build engine/pc_port/build --target quick_weapons --parallel 2
-          test -f engine/pc_port/build/quick_weapons_release/plugins/quick_weapons.dll
+          cat > engine_exports.def <<'EOF'
+          LIBRARY SilentHillPC.exe
+          EXPORTS
+              g_sdlKeyboardState DATA
+              g_PsyX_WheelTotal DATA
+              Pc_ConsoleIsOpen
+              GameFs_WeaponInfoUpdate
+              g_SavegamePtr DATA
+              g_GameWork DATA
+              g_SysWork DATA
+              g_Player_DisableControl DATA
+              g_Inventory_EquippedItem DATA
+              func_8004C564
+              Gfx_PlayerHeldItemAttach
+              WorldGfx_PlayerPrevHeldItem
+              func_8003D01C
+              g_Player_WeaponAttack DATA
+          EOF
 
-      - name: Save DLL for download
+          dlltool -d engine_exports.def -l libSilentHillPC.dll.a
+          mkdir -p dist/plugins
+
+          gcc -shared -O2 -std=gnu11 \
+            -DSH_PC_PORT -DVER_USA -DSKIP_ASM -DPSYX_SKIP_FRAMEBUFFER_STORE \
+            -Dstatic_assert=_Static_assert \
+            -Iengine/pc_port/include \
+            -Iengine/pc_port/include/psyq_compat \
+            -Iengine/pc_port/src \
+            -Iengine/include \
+            -Iengine/include/decomp \
+            -Iengine/pc_port/PsyCross/include/psx \
+            -Iengine/pc_port/PsyCross/include \
+            -Wl,--enable-auto-import \
+            -Wl,--enable-runtime-pseudo-reloc \
+            -o dist/plugins/quick_weapons.dll \
+            src/quick_weapons.c \
+            -L. -lSilentHillPC
+
+          test -f dist/plugins/quick_weapons.dll
+          ls -lh dist/plugins/quick_weapons.dll
+
+      - name: Save experimental DLL for download
         uses: actions/upload-artifact@v4
         with:
           name: quick-weapons-experimental-dll
-          path: engine/pc_port/build/quick_weapons_release/plugins/quick_weapons.dll
+          path: dist/plugins/quick_weapons.dll
           if-no-files-found: error
