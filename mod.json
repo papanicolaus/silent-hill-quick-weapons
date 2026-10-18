@@ -1,0 +1,11 @@
+{
+  "name": "Silent Hill Quick Weapons",
+  "id": "sh1_quick_weapons",
+  "version": "0.1.0-prototype",
+  "author": "Community prototype",
+  "description": "Direct weapon selection (1-0, minus) and bidirectional mouse-wheel cycling through weapons actually owned.",
+  "category": "Gameplay / Controls",
+  "target_engine_commit": "0b7bfd11d",
+  "plugin": "plugins/quick_weapons.dll",
+  "status": "SOURCE ONLY - DLL not compiled or tested yet"
+}
