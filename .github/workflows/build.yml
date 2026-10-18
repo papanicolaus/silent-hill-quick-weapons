@@ -1,0 +1,55 @@
+name: Build Quick Weapons (Windows)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    name: Compile Windows DLL
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Get Quick Weapons source
+        uses: actions/checkout@v4
+
+      - name: Get matching Silent Hill PC Port source
+        uses: actions/checkout@v4
+        with:
+          repository: SlickAmogus/silent-hill-decomp
+          ref: 0b7bfd11dd3184ecb6b7cecad42d510e56bec00f
+          path: engine
+          submodules: recursive
+
+      - name: Prepare MSYS2 compiler
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-SDL2
+            mingw-w64-x86_64-openal
+            mingw-w64-x86_64-libjpeg-turbo
+
+      - name: Compile DLL using matching engine headers
+        shell: msys2 {0}
+        run: |
+          set -e
+          PLUGIN_DIR="$(cygpath -m "$PWD")"
+          printf '\nadd_subdirectory("%s" "${CMAKE_BINARY_DIR}/quick_weapons_mod")\n' "$PLUGIN_DIR" >> engine/pc_port/CMakeLists.txt
+          cmake -S engine/pc_port -B engine/pc_port/build -G Ninja -DSH_BUILD_MAP_DLLS=ON -DSH_ENABLE_RETROACHIEVEMENTS=OFF -DSH_FMV_FFMPEG=OFF
+          cmake --build engine/pc_port/build --target quick_weapons --parallel 2
+          test -f engine/pc_port/build/quick_weapons_release/plugins/quick_weapons.dll
+
+      - name: Save DLL for download
+        uses: actions/upload-artifact@v4
+        with:
+          name: quick-weapons-experimental-dll
+          path: engine/pc_port/build/quick_weapons_release/plugins/quick_weapons.dll
+          if-no-files-found: error
