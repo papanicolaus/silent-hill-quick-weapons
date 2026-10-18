@@ -45,8 +45,6 @@ jobs:
           cat > engine_exports.def <<'EOF'
           LIBRARY SilentHillPC.exe
           EXPORTS
-              g_sdlKeyboardState DATA
-              g_PsyX_WheelTotal DATA
               Pc_ConsoleIsOpen
               GameFs_WeaponInfoUpdate
               g_SavegamePtr DATA
@@ -78,10 +76,15 @@ jobs:
             -Wl,--enable-runtime-pseudo-reloc \
             -o dist/plugins/quick_weapons.dll \
             src/quick_weapons.c \
-            -L. -lSilentHillPC
+            -L. -lSilentHillPC -lSDL2
 
           test -f dist/plugins/quick_weapons.dll
           ls -lh dist/plugins/quick_weapons.dll
+          objdump -p dist/plugins/quick_weapons.dll > dist/imports.txt
+          if grep -E 'g_PsyX_WheelTotal|g_sdlKeyboardState' dist/imports.txt; then
+            echo "ERROR: plugin still imports PsyCross private input globals"
+            exit 1
+          fi
 
       - name: Save experimental DLL for download
         uses: actions/upload-artifact@v4
